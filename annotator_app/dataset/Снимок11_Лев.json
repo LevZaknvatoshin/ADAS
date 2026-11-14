@@ -1,0 +1,248 @@
+{
+  "version": "2.0",
+  "dataset_target": "3D_Lane_and_Road_Scale_Estimation",
+  "image": {
+    "file_name": "Снимок11_Лев.jpg",
+    "width": 1024,
+    "height": 768
+  },
+  "calibration": {
+    "horizon_line_y": 150,
+    "horizon_normalized_v": 0.1953,
+    "standard_lane_width_meters": 3.75,
+    "white_calib_line_start": {
+      "x1": 912,
+      "y1": 491,
+      "x2": 798,
+      "y2": 527
+    },
+    "white_calib_line_end": {
+      "x1": 556,
+      "y1": 220,
+      "x2": 589,
+      "y2": 213
+    },
+    "metric_pixel_scale_start": 0.031368,
+    "metric_pixel_scale_end": 0.111163
+  },
+  "object_adaptive_scaling": {
+    "vehicle_to_lane_ratio": 0.53,
+    "vehicle_calculated_width_m": 1.988,
+    "box_to_lane_ratio": 0.3,
+    "box_calculated_width_m": 1.125
+  },
+  "masks_count": 5,
+  "lanes_and_barriers": [
+    {
+      "instance_id": 1,
+      "name": "Полоса движения 1",
+      "type": "LANE",
+      "direction": "FORWARD",
+      "polygon_2d": [
+        [
+          983,
+          768
+        ],
+        [
+          1045,
+          597
+        ],
+        [
+          550,
+          184
+        ],
+        [
+          524,
+          185
+        ]
+      ],
+      "polygon_normalized": [
+        [
+          0.96,
+          1
+        ],
+        [
+          1.0205,
+          0.7773
+        ],
+        [
+          0.5371,
+          0.2396
+        ],
+        [
+          0.5117,
+          0.2409
+        ]
+      ]
+    },
+    {
+      "instance_id": 2,
+      "name": "Полоса движения 2",
+      "type": "LANE",
+      "direction": "FORWARD",
+      "polygon_2d": [
+        [
+          573,
+          184
+        ],
+        [
+          1027,
+          456
+        ],
+        [
+          1035,
+          575
+        ],
+        [
+          556,
+          184
+        ]
+      ],
+      "polygon_normalized": [
+        [
+          0.5596,
+          0.2396
+        ],
+        [
+          1.0029,
+          0.5938
+        ],
+        [
+          1.0107,
+          0.7487
+        ],
+        [
+          0.543,
+          0.2396
+        ]
+      ]
+    },
+    {
+      "instance_id": 3,
+      "name": "Отбойник / барьер 1",
+      "type": "BARRIER",
+      "direction": "NONE",
+      "polygon_2d": [
+        [
+          463,
+          173
+        ],
+        [
+          506,
+          173
+        ],
+        [
+          942,
+          773
+        ],
+        [
+          233,
+          770
+        ]
+      ],
+      "polygon_normalized": [
+        [
+          0.4521,
+          0.2253
+        ],
+        [
+          0.4941,
+          0.2253
+        ],
+        [
+          0.9199,
+          1.0065
+        ],
+        [
+          0.2275,
+          1.0026
+        ]
+      ]
+    },
+    {
+      "instance_id": 4,
+      "name": "Полоса движения 3",
+      "type": "LANE",
+      "direction": "FORWARD",
+      "polygon_2d": [
+        [
+          449,
+          187
+        ],
+        [
+          426,
+          182
+        ],
+        [
+          -64,
+          770
+        ],
+        [
+          161,
+          766
+        ]
+      ],
+      "polygon_normalized": [
+        [
+          0.4385,
+          0.2435
+        ],
+        [
+          0.416,
+          0.237
+        ],
+        [
+          -0.0625,
+          1.0026
+        ],
+        [
+          0.1572,
+          0.9974
+        ]
+      ]
+    },
+    {
+      "instance_id": 5,
+      "name": "Полоса движения 4",
+      "type": "LANE",
+      "direction": "FORWARD",
+      "polygon_2d": [
+        [
+          407,
+          179
+        ],
+        [
+          425,
+          185
+        ],
+        [
+          7,
+          678
+        ],
+        [
+          7,
+          525
+        ]
+      ],
+      "polygon_normalized": [
+        [
+          0.3975,
+          0.2331
+        ],
+        [
+          0.415,
+          0.2409
+        ],
+        [
+          0.0068,
+          0.8828
+        ],
+        [
+          0.0068,
+          0.6836
+        ]
+      ]
+    }
+  ],
+  "annotator_username": "Лев"
+}

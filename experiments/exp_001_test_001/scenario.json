@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-10-30T09:28:07",
+  "environment": {
+    "source_image": "",
+    "environment_dir": "",
+    "depth_strength": 1.0,
+    "grid_resolution": 240,
+    "cam_pitch": 82.0
+  },
+  "scene_items": [],
+  "render_settings": {
+    "engine": "BLENDER_EEVEE",
+    "total_frames": 60,
+    "fps": 30,
+    "resolution_scale": 200
+  }
+}

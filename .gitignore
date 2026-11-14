@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / URL-encoded files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Blender auto-saves and backups
+*.blend1
+*.blend2
+
+# Cache and logs
+.pytest_cache/
+*.log
+
+# Large output/generated data (optional, keep repo clean)
+output/

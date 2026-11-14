@@ -1,0 +1,1964 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>ADAS Road Annotator Pro — Разметка дорог, полос и геометрии</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg-dark: #121418;
+      --bg-panel: #1a1d24;
+      --bg-card: #232833;
+      --border-color: #333a47;
+      --accent-blue: #2f80ed;
+      --accent-cyan: #00d2ff;
+      --accent-green: #27ae60;
+      --accent-orange: #f2994a;
+      --accent-red: #eb5757;
+      --text-main: #f0f3f8;
+      --text-dim: #9aa5b5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* Top Navigation Header */
+    header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; color: var(--text-main); }
+    .brand-badge { background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.5px; }
+
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+    .btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn:hover { background: #2f3644; border-color: #485366; }
+    .btn-primary { background: var(--accent-blue); border-color: #2b74d6; color: #fff; }
+    .btn-primary:hover { background: #256ecc; }
+    .btn-success { background: var(--accent-green); border-color: #219653; color: #fff; }
+    .btn-success:hover { background: #1e874b; }
+    .btn-danger { background: rgba(235, 87, 87, 0.15); border-color: var(--accent-red); color: var(--accent-red); }
+    .btn-danger:hover { background: var(--accent-red); color: #fff; }
+    .btn-save-dataset {
+      background: linear-gradient(135deg, #27ae60, #2ecc71);
+      border-color: #219653;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(39, 174, 96, 0.35);
+    }
+    .btn-save-dataset:hover {
+      background: linear-gradient(135deg, #219653, #27ae60);
+      box-shadow: 0 4px 14px rgba(39, 174, 96, 0.55);
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(0, 210, 255, 0.10);
+      border: 1px solid rgba(0, 210, 255, 0.3);
+      border-radius: 20px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.84rem;
+      transition: all 0.15s ease;
+    }
+    .user-pill:hover {
+      background: rgba(0, 210, 255, 0.20);
+      border-color: var(--accent-cyan);
+    }
+
+    .dataset-item {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.8rem;
+    }
+    .dataset-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .badge-author {
+      background: rgba(47, 128, 237, 0.2);
+      color: var(--accent-cyan);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    /* Main Workspace */
+    .workspace { display: flex; flex: 1; height: calc(100vh - 57px); overflow: hidden; }
+
+    /* Left Toolbar */
+    .toolbar-left {
+      width: 250px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 15px;
+      gap: 15px;
+      overflow-y: auto;
+    }
+    .tool-group-title { font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .tool-btn {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+    .tool-btn:hover { background: #2f3644; border-color: #485366; }
+    .tool-btn.active { background: rgba(47, 128, 237, 0.2); border-color: var(--accent-blue); color: var(--accent-cyan); }
+    .tool-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+
+    /* Center Canvas Viewport */
+    .canvas-viewport {
+      flex: 1;
+      background: #0b0d10;
+      position: relative;
+      overflow: hidden;
+    }
+    #mainCanvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; cursor: crosshair; }
+
+    .canvas-hud {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: rgba(26, 29, 36, 0.90);
+      backdrop-filter: blur(8px);
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 5;
+    }
+    .hud-val { color: var(--accent-cyan); font-weight: 700; }
+
+    /* Right Properties & Layers Panel */
+    .panel-right {
+      width: 320px;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-tabs { display: flex; border-bottom: 1px solid var(--border-color); }
+    .panel-tab {
+      flex: 1;
+      padding: 12px 10px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-dim);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .panel-tab.active { color: var(--text-main); border-bottom-color: var(--accent-blue); background: rgba(47, 128, 237, 0.05); }
+
+    .panel-content { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+
+    /* Card Box */
+    .card-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card-header { font-size: 0.82rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 0.8rem; color: var(--text-dim); font-weight: 500; }
+    .form-input {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .form-input:focus { border-color: var(--accent-blue); }
+
+    /* Layers List */
+    .layer-item {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 0.85rem;
+    }
+    .layer-item:hover { border-color: #4c5668; }
+    .layer-item.active { border-color: var(--accent-blue); background: rgba(47, 128, 237, 0.12); }
+    .layer-left { display: flex; align-items: center; gap: 8px; }
+    .layer-tag { width: 10px; height: 10px; border-radius: 3px; background: var(--accent-cyan); display: inline-block; }
+    .layer-actions { display: flex; gap: 5px; }
+    .icon-btn { background: transparent; border: none; color: var(--text-dim); cursor: pointer; padding: 3px 5px; border-radius: 4px; font-size: 0.85rem; }
+    .icon-btn:hover { color: var(--accent-red); background: rgba(235, 87, 87, 0.1); }
+
+    /* Instruction Hint */
+    .hint-banner {
+      background: rgba(47, 128, 237, 0.1);
+      border: 1px solid rgba(47, 128, 237, 0.3);
+      color: #9ac2f7;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    /* Modal / File input */
+    #fileInput { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand">
+      <span class="brand-badge">ADAS CV 2.0</span>
+      <span>Road & Lane Annotator Pro</span>
+    </div>
+
+    <div class="header-actions">
+      <!-- Nickname Pill -->
+      <div class="user-pill" onclick="promptChangeUsername()" title="Нажмите, чтобы изменить ваш никнейм разметчика">
+        <span style="color: var(--accent-cyan);">👤 Разметчик:</span>
+        <b id="headerUsername">User</b>
+        <span style="font-size: 0.72rem; color: var(--text-dim); margin-left: 2px;">✎</span>
+      </div>
+
+      <input type="file" id="fileInput" accept="image/*">
+      <button class="btn" onclick="document.getElementById('fileInput').click()" title="Выбрать файл фото с диска">📁 Загрузить фото</button>
+      <button class="btn" onclick="loadSampleImage('Снимок11.JPG')" title="Загрузить тестовый кадр 'Снимок11'">📷 Снимок 11</button>
+      <button class="btn" onclick="loadSampleImage('sample_highway.jpg')" title="Загрузить демо трассы">🛣️ Трасса</button>
+
+      <!-- Primary Auto-Accumulation Dataset Save -->
+      <button class="btn btn-save-dataset" onclick="saveToDataset()" title="Сохранить фото и разметку прямо в накопительную папку dataset/">
+        💾 Сохранить в датасет
+      </button>
+
+      <button class="btn btn-primary" onclick="exportJSON()" title="Скачать JSON разметки отдельно">📥 Экспорт JSON</button>
+      <button class="btn btn-success" onclick="exportRenderedImage()" title="Скачать снимок холста с масками">📸 PNG</button>
+    </div>
+  </header>
+
+  <!-- Workspace -->
+  <div class="workspace">
+
+    <!-- Left Toolbar -->
+    <div class="toolbar-left">
+      <div>
+        <div class="tool-group-title">Инструменты геометрии</div>
+        
+        <button class="tool-btn" id="btn-tool-road" onclick="setTool('ROAD_MASK')">
+          <span class="tool-icon">🛣</span>
+          <div>
+            <div>Маска проезжей части</div>
+            <div style="font-size: 0.72rem; color: var(--text-dim);">Зона дороги целиком (может быть несколько)</div>
+          </div>
+        </button>
+
+        <button class="tool-btn active" id="btn-tool-lane" onclick="setTool('LANE_MASK')">
+          <span class="tool-icon">🚘</span>
+          <div>
+            <div>Маска полосы / коридор</div>
+            <div style="font-size: 0.72rem; color: var(--text-dim);">Новая маска = новая полоса</div>
+          </div>
+        </button>
+
+        <button class="tool-btn" id="btn-tool-barrier" onclick="setTool('BARRIER_MASK')">
+          <span class="tool-icon">🚧</span>
+          <div>
+            <div>Маска отбойника / барьера</div>
+            <div style="font-size: 0.72rem; color: var(--text-dim);">Металлический / бетонный барьер</div>
+          </div>
+        </button>
+
+        <button class="tool-btn" id="btn-tool-horizon" onclick="setTool('HORIZON_LINE')">
+          <span class="tool-icon">🌅</span>
+          <div>
+            <div>Линия горизонта</div>
+            <div style="font-size: 0.72rem; color: var(--text-dim);">Уровень схода перспективы</div>
+          </div>
+        </button>
+
+        <button class="tool-btn" id="btn-tool-calib-start" onclick="setTool('CALIB_START')">
+          <span class="tool-icon">📏</span>
+          <div>
+            <div>Ширина в начале (ближняя)</div>
+            <div style="font-size: 0.72rem; color: var(--text-dim);">Белая линия калибратора у капота</div>
+          </div>
+        </button>
+
+        <button class="tool-btn" id="btn-tool-calib-end" onclick="setTool('CALIB_END')">
+          <span class="tool-icon">📐</span>
+          <div>
+            <div>Ширина в конце (дальняя)</div>
+            <div style="font-size: 0.72rem; color: var(--text-dim);">Белая линия калибратора у горизонта</div>
+          </div>
+        </button>
+
+        <button class="tool-btn" id="btn-tool-select" onclick="setTool('SELECT')">
+          <span class="tool-icon">🖐</span>
+          <div>
+            <div>Выбор и правка точек</div>
+            <div style="font-size: 0.72rem; color: var(--text-dim);">Тяните углы для идеальной формы</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Visibility filter to avoid overlay clutter -->
+      <div>
+        <div class="tool-group-title">Видимость слоев (фильтр)</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-card); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" id="chkShowRoad" checked onchange="toggleLayerTypeVisibility('ROAD', this.checked)">
+            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: #9b59b6;"></span>
+            <span>Проезжие части (дороги)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" id="chkShowLanes" checked onchange="toggleLayerTypeVisibility('LANE', this.checked)">
+            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: #00d2ff;"></span>
+            <span>Полосы движения</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" id="chkShowBarriers" checked onchange="toggleLayerTypeVisibility('BARRIER', this.checked)">
+            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: #eb5757;"></span>
+            <span>Отбойники / барьеры</span>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <div class="tool-group-title">Отображение точек</div>
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label class="form-label">Размер точек / маркеров:</label>
+          <select class="form-input" id="pointSizeSelect" onchange="setHandleSize(this.value)">
+            <option value="0.75">Компактный (4.5 px)</option>
+            <option value="1.0" selected>Оптимальный (6 px - Фиксированный)</option>
+            <option value="1.3">Средний (7.5 px)</option>
+            <option value="1.7">Крупный (9.5 px)</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <div class="tool-group-title">История и отмена</div>
+        <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+          <button class="btn" style="flex: 1;" onclick="undo()" title="Отменить последнее действие (Ctrl+Z)">↩ Ctrl+Z</button>
+          <button class="btn" style="flex: 1;" onclick="redo()" title="Повторить отмененное действие (Ctrl+Y)">↪ Ctrl+Y</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="tool-group-title">Быстрые действия</div>
+        <button class="btn btn-danger" style="width: 100%;" onclick="deleteSelectedLayer()">🗑 Удалить выбранный слой</button>
+        <button class="btn" style="width: 100%; margin-top: 6px;" onclick="clearAllMasks()">↺ Очистить все маски</button>
+      </div>
+
+      <div class="hint-banner">
+        💡 <b>Навигация и клавиши:</b><br>
+        • <b>Колесико мыши</b> — плавный зум в точку<br>
+        • <b>СКМ (колесико) / ПКМ / Пробел</b> — панорама<br>
+        • <b>Ctrl+Z</b> — отмена (Ctrl+Y повтор)<br>
+        • <b>Esc</b> — сброс точки / <b>Del</b> — удалить слой
+      </div>
+    </div>
+
+    <!-- Center Viewport -->
+    <div class="canvas-viewport" id="viewportContainer">
+      <div class="canvas-hud">
+        <div>Режим: <span class="hud-val" id="hudToolName">Маска полосы</span></div>
+        <div>Слоев: <span class="hud-val" id="hudLayersCount">0</span></div>
+        <div>Горизонт: <span class="hud-val" id="hudHorizonY">368px</span></div>
+        <div>Зум: <span class="hud-val" id="hudZoomVal">100%</span> <button class="btn" style="padding: 2px 7px; font-size: 0.72rem; margin-left: 3px; border-radius: 4px;" onclick="resetZoomFit()" title="Сбросить масштаб и вернуть по центру [F]">⛶ Сброс</button></div>
+      </div>
+      <canvas id="mainCanvas"></canvas>
+    </div>
+
+    <!-- Right Properties & Layers Panel -->
+    <div class="panel-right">
+      <div class="panel-tabs">
+        <div class="panel-tab active" onclick="switchRightTab('layers')">Полосы и маски</div>
+        <div class="panel-tab" onclick="switchRightTab('calibration')">Метрика и масштаб</div>
+        <div class="panel-tab" onclick="switchRightTab('dataset')">📦 Датасет (<span id="datasetCountTab">0</span>)</div>
+      </div>
+
+      <!-- Tab: Layers -->
+      <div class="panel-content" id="tabContentLayers">
+        <div class="card-box">
+          <div class="card-header">
+            <span>Маски (Дорога / Полосы / Барьеры)</span>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn" style="padding: 2px 6px; font-size: 0.72rem;" onclick="addQuickRoadMask()" title="Добавить маску проезжей части">+ Дорога</button>
+              <button class="btn" style="padding: 2px 6px; font-size: 0.72rem;" onclick="addQuickLaneMask()" title="Добавить маску отдельной полосы">+ Полоса</button>
+            </div>
+          </div>
+          <div id="layersListContainer" style="display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <div class="card-box" id="selectedLayerBox" style="display: none;">
+          <div class="card-header">Свойства выбранного слоя</div>
+          
+          <div class="form-group">
+            <label class="form-label">Название слоя:</label>
+            <input type="text" class="form-input" id="layerNameInput" oninput="updateSelectedLayerName(this.value)">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Тип зоны:</label>
+            <select class="form-input" id="layerTypeSelect" onchange="updateSelectedLayerType(this.value)">
+              <option value="ROAD">Проезжая часть (Carriageway / Вся дорога)</option>
+              <option value="LANE">Полоса движения (Lane Mask)</option>
+              <option value="BARRIER">Отбойник / Разделительный барьер</option>
+              <option value="SHOULDER">Обочина / Аварийная полоса</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Направление движения:</label>
+            <select class="form-input" id="layerDirSelect" onchange="updateSelectedLayerDir(this.value)">
+              <option value="FORWARD">Попутное (вперед от камеры)</option>
+              <option value="ONCOMING">Встречное (навстречу камере)</option>
+              <option value="NONE">Без движения (статичная зона)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Accumulated Dataset -->
+      <div class="panel-content" id="tabContentDataset" style="display: none;">
+        <div class="card-box">
+          <div class="card-header">
+            <span>Накопленная база датасета</span>
+            <button class="btn" style="padding: 2px 8px; font-size: 0.75rem;" onclick="refreshDatasetList()">🔄 Обновить</button>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); line-height: 1.4;">
+            Папка: <code>annotator_app/dataset/</code><br>
+            Каждый кадр содержит пару: <b>[Фото]_[Ник].jpg</b> и <b>[Разметка]_[Ник].json</b>
+          </div>
+          <div id="datasetItemsContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 480px; overflow-y: auto; margin-top: 6px;">
+            <div style="color: var(--text-dim); font-size: 0.8rem; text-align: center; padding: 15px;">Загрузка списка датасета...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Calibration & Metric Widths -->
+      <div class="panel-content" id="tabContentCalib" style="display: none;">
+        <div class="card-box">
+          <div class="card-header">Белые линии калибровки ширины</div>
+          
+          <div class="form-group">
+            <label class="form-label">Физическая ширина полосы (ГОСТ):</label>
+            <input type="number" step="0.05" class="form-input" id="calibMetricWidth" value="3.75" oninput="updateCalibValues()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Позиция горизонта Y (px):</label>
+            <input type="number" class="form-input" id="calibHorizonY" value="368" oninput="updateHorizonFromInput(this.value)">
+          </div>
+        </div>
+
+        <div class="card-box">
+          <div class="card-header">Автоматический масштаб объектов</div>
+          
+          <div class="form-group">
+            <label class="form-label">Ширина авто (% от полосы):</label>
+            <input type="number" step="1" class="form-input" id="autoCarRatio" value="53" oninput="updateCalibValues()">
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Расчетная ширина автомобиля: <b style="color: var(--accent-cyan);" id="calcCarWidth">1.99 м</b>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Ширина коробки / препятствия (% от полосы):</label>
+            <input type="number" step="1" class="form-input" id="autoBoxRatio" value="30" oninput="updateCalibValues()">
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+              Расчетная ширина коробки: <b style="color: var(--accent-cyan);" id="calcBoxWidth">1.12 м</b>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Accumulated Dataset -->
+      <div class="panel-content" id="tabContentDataset" style="display: none;">
+        <div class="card-box">
+          <div class="card-header">
+            <span>Накопленная база датасета</span>
+            <button class="btn" style="padding: 2px 8px; font-size: 0.75rem;" onclick="refreshDatasetList()">🔄 Обновить</button>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); line-height: 1.4;">
+            Папка: <code>annotator_app/dataset/</code><br>
+            Каждый кадр содержит пару: <b>[Фото]_[Ник].jpg</b> и <b>[Разметка]_[Ник].json</b>
+          </div>
+          <div id="datasetItemsContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 480px; overflow-y: auto; margin-top: 6px;">
+            <div style="color: var(--text-dim); font-size: 0.8rem; text-align: center; padding: 15px;">Загрузка списка датасета...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // State management
+    const state = {
+      image: null,
+      imageFileName: 'sample_highway.jpg',
+      imageDataUrl: '',
+      imageWidth: 0,
+      imageHeight: 0,
+      username: localStorage.getItem('adas_annotator_username') || '',
+      datasetSamples: [],
+      scale: 1.0,
+      fitScale: 1.0,
+      offsetX: 0,
+      offsetY: 0,
+      isPanning: false,
+      panStartX: 0,
+      panStartY: 0,
+      spacePressed: false,
+      currentTool: 'LANE_MASK',
+      layers: [],
+      selectedLayerIndex: -1,
+      horizonY: 368,
+      calibStart: { x1: 580, y1: 850, x2: 770, y2: 850 }, // White line near camera
+      calibEnd: { x1: 505, y1: 375, x2: 525, y2: 375 },   // White line near horizon
+      metricWidthM: 3.75,
+      carRatio: 53,
+      boxRatio: 30,
+      visibility: {
+        ROAD: true,
+        LANE: true,
+        BARRIER: true,
+        SHOULDER: true
+      },
+      pointScaleMultiplier: 1.0,
+      isDraggingPoint: false,
+      draggedPoint: null, // { layerIndex, pointIndex } or special 'HORIZON', 'CALIB_START_1', etc.
+      activePolygonPoints: []
+    };
+
+    function initUser() {
+      let u = localStorage.getItem('adas_annotator_username');
+      if (!u || !u.trim()) {
+        u = 'Лев';
+        localStorage.setItem('adas_annotator_username', u);
+      }
+      state.username = u;
+      const el = document.getElementById('headerUsername');
+      if (el) el.innerText = u;
+    }
+
+    function promptChangeUsername() {
+      const current = state.username || 'User';
+      const u = prompt('Изменить никнейм разметчика:', current);
+      if (u && u.trim()) {
+        state.username = u.trim();
+        localStorage.setItem('adas_annotator_username', state.username);
+        const el = document.getElementById('headerUsername');
+        if (el) el.innerText = state.username;
+      }
+    }
+
+    function setHandleSize(val) {
+      state.pointScaleMultiplier = parseFloat(val) || 1.0;
+      render();
+    }
+
+    // Layer visibility helpers (prevent overlay clutter)
+    function isLayerVisible(layer) {
+      if (!layer) return false;
+      if (layer.visible === false) return false;
+      const type = layer.type || 'LANE';
+      if (state.visibility[type] === false) return false;
+      return true;
+    }
+
+    function toggleLayerTypeVisibility(type, isVisible) {
+      state.visibility[type] = isVisible;
+      render();
+    }
+
+    function toggleLayerIndividual(idx) {
+      if (state.layers[idx]) {
+        state.layers[idx].visible = (state.layers[idx].visible === false) ? true : false;
+        updateLayersUI();
+        render();
+      }
+    }
+
+    // --- History & Undo/Redo Engine ---
+    const historyStack = [];
+    const redoStack = [];
+    const MAX_HISTORY = 60;
+    let preDragSnapshot = null;
+    let hasDragged = false;
+
+    function createSnapshot() {
+      return JSON.stringify({
+        layers: state.layers,
+        selectedLayerIndex: state.selectedLayerIndex,
+        horizonY: state.horizonY,
+        calibStart: state.calibStart,
+        calibEnd: state.calibEnd,
+        activePolygonPoints: state.activePolygonPoints
+      });
+    }
+
+    function pushHistory() {
+      const snap = createSnapshot();
+      if (historyStack.length > 0 && historyStack[historyStack.length - 1] === snap) {
+        return;
+      }
+      historyStack.push(snap);
+      if (historyStack.length > MAX_HISTORY) {
+        historyStack.shift();
+      }
+      redoStack.length = 0;
+    }
+
+    function restoreSnapshot(snapStr) {
+      try {
+        const data = JSON.parse(snapStr);
+        state.layers = data.layers || [];
+        state.selectedLayerIndex = (data.selectedLayerIndex >= state.layers.length) ? state.layers.length - 1 : data.selectedLayerIndex;
+        state.horizonY = data.horizonY || state.horizonY;
+        state.calibStart = data.calibStart || state.calibStart;
+        state.calibEnd = data.calibEnd || state.calibEnd;
+        state.activePolygonPoints = data.activePolygonPoints || [];
+
+        const horizInput = document.getElementById('calibHorizonY');
+        if (horizInput) horizInput.value = state.horizonY;
+
+        updateLayersUI();
+        render();
+      } catch (e) {
+        console.error('Failed to restore snapshot:', e);
+      }
+    }
+
+    function undo() {
+      if (historyStack.length === 0) {
+        // If drawing active polygon, clear points first
+        if (state.activePolygonPoints && state.activePolygonPoints.length > 0) {
+          state.activePolygonPoints.pop();
+          render();
+        }
+        return;
+      }
+      const current = createSnapshot();
+      const prev = historyStack.pop();
+      redoStack.push(current);
+      restoreSnapshot(prev);
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      const current = createSnapshot();
+      const next = redoStack.pop();
+      historyStack.push(current);
+      restoreSnapshot(next);
+    }
+
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('viewportContainer');
+
+    // Tool setting
+    function setTool(tool) {
+      state.currentTool = tool;
+      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('btn-tool-' + tool.toLowerCase().replace('_', '-'));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const toolNames = {
+        'ROAD_MASK': 'Проезжая часть (Дорога)',
+        'LANE_MASK': 'Маска полосы',
+        'BARRIER_MASK': 'Маска отбойника',
+        'HORIZON_LINE': 'Линия горизонта',
+        'CALIB_START': 'Ширина в начале',
+        'CALIB_END': 'Ширина в конце',
+        'SELECT': 'Выбор и правка'
+      };
+      document.getElementById('hudToolName').innerText = toolNames[tool] || tool;
+      state.activePolygonPoints = [];
+      render();
+    }
+
+    // Load sample image
+    function loadSampleImage(imageName = 'Снимок11.JPG') {
+      const target = imageName || 'Снимок11.JPG';
+      state.imageFileName = target;
+      const img = new Image();
+      img.onload = () => {
+        setupLoadedImage(img);
+        if (target.includes('11') || target.includes('highway')) {
+          createInitialHighwayLayers();
+        } else {
+          createDefaultLanesForAnyImage();
+        }
+        // Generate dataUrl for dataset save
+        try {
+          const off = document.createElement('canvas');
+          off.width = img.width;
+          off.height = img.height;
+          const octx = off.getContext('2d');
+          octx.drawImage(img, 0, 0);
+          state.imageDataUrl = off.toDataURL('image/jpeg', 0.95);
+        } catch (e) {
+          console.warn('Canvas export failed:', e);
+        }
+      };
+      img.onerror = () => {
+        if (target !== 'sample_highway.jpg') {
+          console.warn(`Could not load ${target}, trying sample_highway.jpg`);
+          loadSampleImage('sample_highway.jpg');
+        } else {
+          console.warn('Sample image not found via path, waiting for user file drop');
+        }
+      };
+      img.src = 'samples/' + target;
+    }
+
+    // Load image from File object
+    function loadImageFromFile(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      state.imageFileName = file.name;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        state.imageDataUrl = event.target.result;
+        const img = new Image();
+        img.onload = () => {
+          setupLoadedImage(img);
+          createDefaultLanesForAnyImage();
+        };
+        img.src = state.imageDataUrl;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // User file input
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) loadImageFromFile(file);
+    });
+
+    // Drag and drop onto window / viewport
+    window.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        loadImageFromFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    function setupLoadedImage(img) {
+      state.image = img;
+      state.imageWidth = img.width || 800;
+      state.imageHeight = img.height || 600;
+      state.horizonY = Math.round(state.imageHeight * 0.35);
+      const horizInput = document.getElementById('calibHorizonY');
+      if (horizInput) horizInput.value = state.horizonY;
+      historyStack.length = 0;
+      redoStack.length = 0;
+      resizeCanvas();
+      resetZoomFit();
+    }
+
+    function resizeCanvas() {
+      if (!container) return;
+      canvas.width = container.clientWidth || 800;
+      canvas.height = container.clientHeight || 600;
+    }
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      render();
+    });
+
+    function resetZoomFit() {
+      if (!state.image || !container) return;
+      const cw = container.clientWidth || 800;
+      const ch = container.clientHeight || 600;
+      const margin = 35;
+      const scaleX = (cw - margin * 2) / (state.imageWidth || 1);
+      const scaleY = (ch - margin * 2) / (state.imageHeight || 1);
+      state.scale = Math.max(0.01, Math.min(scaleX, scaleY, 1.0));
+      state.fitScale = state.scale;
+      state.offsetX = Math.round((cw - state.imageWidth * state.scale) / 2);
+      state.offsetY = Math.round((ch - state.imageHeight * state.scale) / 2);
+      updateZoomHUD();
+      render();
+    }
+
+    function updateZoomHUD() {
+      const zoomPct = Math.round((state.scale / (state.fitScale || 1.0)) * 100);
+      const el = document.getElementById('hudZoomVal');
+      if (el) el.innerText = zoomPct + '%';
+    }
+
+    // Initial Highway Setup with dedicated Carriageways, Barrier & Lanes
+    function createInitialHighwayLayers() {
+      const w = state.imageWidth;
+      const h = state.imageHeight;
+      const hy = state.horizonY;
+
+      state.layers = [
+        // 1. Separate Carriageway Masks (Проезжие части)
+        {
+          id: 'road_onc',
+          name: 'Встречная проезжая часть (левая)',
+          type: 'ROAD',
+          direction: 'ONCOMING',
+          visible: true,
+          points: [
+            { x: Math.round(w * 0.08), y: h - 1 },
+            { x: Math.round(w * 0.390), y: h - 1 },
+            { x: Math.round(w * 0.492), y: hy },
+            { x: Math.round(w * 0.445), y: hy }
+          ]
+        },
+        {
+          id: 'road_fwd',
+          name: 'Попутная проезжая часть (правая)',
+          type: 'ROAD',
+          direction: 'FORWARD',
+          visible: true,
+          points: [
+            { x: Math.round(w * 0.435), y: h - 1 },
+            { x: Math.round(w * 0.880), y: h - 1 },
+            { x: Math.round(w * 0.525), y: hy },
+            { x: Math.round(w * 0.498), y: hy }
+          ]
+        },
+        // 2. Median Barrier / Safety island
+        {
+          id: 'barrier_median',
+          name: 'Центральный отбойник / газон',
+          type: 'BARRIER',
+          direction: 'NONE',
+          visible: true,
+          points: [
+            { x: Math.round(w * 0.390), y: h - 1 },
+            { x: Math.round(w * 0.435), y: h - 1 },
+            { x: Math.round(w * 0.498), y: hy },
+            { x: Math.round(w * 0.492), y: hy }
+          ]
+        },
+        // 3. Individual Lanes
+        {
+          id: 'lane_onc_1',
+          name: 'Встречная полоса 1 (правая)',
+          type: 'LANE',
+          direction: 'ONCOMING',
+          visible: true,
+          points: [
+            { x: Math.round(w * 0.08), y: h - 1 },
+            { x: Math.round(w * 0.235), y: h - 1 },
+            { x: Math.round(w * 0.468), y: hy },
+            { x: Math.round(w * 0.445), y: hy }
+          ]
+        },
+        {
+          id: 'lane_onc_2',
+          name: 'Встречная полоса 2 (скоростная)',
+          type: 'LANE',
+          direction: 'ONCOMING',
+          visible: true,
+          points: [
+            { x: Math.round(w * 0.235), y: h - 1 },
+            { x: Math.round(w * 0.390), y: h - 1 },
+            { x: Math.round(w * 0.492), y: hy },
+            { x: Math.round(w * 0.468), y: hy }
+          ]
+        },
+        {
+          id: 'lane_fwd_2',
+          name: 'Попутная полоса 2 (скоростная)',
+          type: 'LANE',
+          direction: 'FORWARD',
+          visible: true,
+          points: [
+            { x: Math.round(w * 0.435), y: h - 1 },
+            { x: Math.round(w * 0.585), y: h - 1 },
+            { x: Math.round(w * 0.505), y: hy },
+            { x: Math.round(w * 0.498), y: hy }
+          ]
+        },
+        {
+          id: 'lane_fwd_1',
+          name: 'Попутная полоса 1 (основная)',
+          type: 'LANE',
+          direction: 'FORWARD',
+          visible: true,
+          points: [
+            { x: Math.round(w * 0.585), y: h - 1 },
+            { x: Math.round(w * 0.880), y: h - 1 },
+            { x: Math.round(w * 0.525), y: hy },
+            { x: Math.round(w * 0.505), y: hy }
+          ]
+        }
+      ];
+
+      state.calibStart = { x1: Math.round(w * 0.585), y1: Math.round(h * 0.88), x2: Math.round(w * 0.880), y2: Math.round(h * 0.88) };
+      state.calibEnd = { x1: Math.round(w * 0.505), y1: Math.round(hy + 15), x2: Math.round(w * 0.525), y2: Math.round(hy + 15) };
+      state.selectedLayerIndex = 6; // Select forward lane 1 by default
+      updateLayersUI();
+      render();
+    }
+
+    function createDefaultLanesForAnyImage() {
+      const w = state.imageWidth;
+      const h = state.imageHeight;
+      const hy = state.horizonY;
+      state.layers = [
+        {
+          id: 'road_1',
+          name: 'Проезжая часть 1',
+          type: 'ROAD',
+          direction: 'FORWARD',
+          visible: true,
+          points: [
+            { x: Math.round(w * 0.42), y: h - 1 },
+            { x: Math.round(w * 0.90), y: h - 1 },
+            { x: Math.round(w * 0.54), y: hy },
+            { x: Math.round(w * 0.48), y: hy }
+          ]
+        },
+        {
+          id: 'lane_1',
+          name: 'Полоса движения 1',
+          type: 'LANE',
+          direction: 'FORWARD',
+          visible: true,
+          points: [
+            { x: Math.round(w * 0.52), y: h - 1 },
+            { x: Math.round(w * 0.85), y: h - 1 },
+            { x: Math.round(w * 0.52), y: hy },
+            { x: Math.round(w * 0.50), y: hy }
+          ]
+        }
+      ];
+      state.calibStart = { x1: Math.round(w * 0.52), y1: Math.round(h * 0.88), x2: Math.round(w * 0.85), y2: Math.round(h * 0.88) };
+      state.calibEnd = { x1: Math.round(w * 0.50), y1: Math.round(hy + 15), x2: Math.round(w * 0.52), y2: Math.round(hy + 15) };
+      state.selectedLayerIndex = 1;
+      updateLayersUI();
+      render();
+    }
+
+    // Wheel zoom around mouse pointer
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (!state.image) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+
+      // Image coords under mouse cursor before zoom
+      const imgX = (screenX - state.offsetX) / state.scale;
+      const imgY = (screenY - state.offsetY) / state.scale;
+
+      const zoomFactor = e.deltaY < 0 ? 1.15 : (1.0 / 1.15);
+      const minScale = (state.fitScale || 0.1) * 0.35;
+      const maxScale = Math.max((state.fitScale || 1.0) * 40.0, 30.0);
+      const newScale = Math.max(minScale, Math.min(maxScale, state.scale * zoomFactor));
+
+      // Keep (imgX, imgY) anchored under the cursor!
+      state.offsetX = screenX - imgX * newScale;
+      state.offsetY = screenY - imgY * newScale;
+      state.scale = newScale;
+
+      updateZoomHUD();
+      render();
+    }, { passive: false });
+
+    // Prevent default context menu so right click drag can pan effortlessly
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
+
+    // Double-click on canvas resets zoom to fit
+    canvas.addEventListener('dblclick', () => {
+      resetZoomFit();
+    });
+
+    // Canvas click & drag interactions
+    canvas.addEventListener('mousedown', (e) => {
+      // Pan check: Middle button (1), Right button (2), or Left button while Space is held
+      if (e.button === 1 || e.button === 2 || (e.button === 0 && state.spacePressed)) {
+        state.isPanning = true;
+        state.panStartX = e.clientX;
+        state.panStartY = e.clientY;
+        canvas.style.cursor = 'grabbing';
+        return;
+      }
+
+      if (e.button !== 0) return; // Only left click interacts with points/tools
+
+      const rect = canvas.getBoundingClientRect();
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      const mouseX = (screenX - state.offsetX) / state.scale;
+      const mouseY = (screenY - state.offsetY) / state.scale;
+
+      preDragSnapshot = createSnapshot();
+      hasDragged = false;
+
+      const mult = state.pointScaleMultiplier || 1.0;
+      const hitDist = Math.max(14, 12 * mult);
+
+      // Check if clicked calibration handles in screen space
+      if (Math.hypot(screenX - (state.calibStart.x1 * state.scale + state.offsetX), screenY - (state.calibStart.y1 * state.scale + state.offsetY)) < hitDist) {
+        state.isDraggingPoint = true; state.draggedPoint = 'CALIB_START_1'; return;
+      }
+      if (Math.hypot(screenX - (state.calibStart.x2 * state.scale + state.offsetX), screenY - (state.calibStart.y2 * state.scale + state.offsetY)) < hitDist) {
+        state.isDraggingPoint = true; state.draggedPoint = 'CALIB_START_2'; return;
+      }
+      if (Math.hypot(screenX - (state.calibEnd.x1 * state.scale + state.offsetX), screenY - (state.calibEnd.y1 * state.scale + state.offsetY)) < hitDist) {
+        state.isDraggingPoint = true; state.draggedPoint = 'CALIB_END_1'; return;
+      }
+      if (Math.hypot(screenX - (state.calibEnd.x2 * state.scale + state.offsetX), screenY - (state.calibEnd.y2 * state.scale + state.offsetY)) < hitDist) {
+        state.isDraggingPoint = true; state.draggedPoint = 'CALIB_END_2'; return;
+      }
+
+      // Check horizon line drag in screen space
+      if (Math.abs(screenY - (state.horizonY * state.scale + state.offsetY)) < hitDist) {
+        state.isDraggingPoint = true; state.draggedPoint = 'HORIZON'; return;
+      }
+
+      // Check polygon point drag in screen space (skip hidden layers)
+      for (let li = 0; li < state.layers.length; li++) {
+        const layer = state.layers[li];
+        if (!isLayerVisible(layer)) continue;
+        for (let pi = 0; pi < layer.points.length; pi++) {
+          const pt = layer.points[pi];
+          if (Math.hypot(screenX - (pt.x * state.scale + state.offsetX), screenY - (pt.y * state.scale + state.offsetY)) < hitDist) {
+            state.selectedLayerIndex = li;
+            state.isDraggingPoint = true;
+            state.draggedPoint = { layerIndex: li, pointIndex: pi };
+            updateLayersUI();
+            render();
+            return;
+          }
+        }
+      }
+
+      // If clicked inside polygon, select it (skip hidden layers)
+      // Check lanes & barriers first so clicking on lane doesn't select the road behind it!
+      for (let li = state.layers.length - 1; li >= 0; li--) {
+        const layer = state.layers[li];
+        if (isLayerVisible(layer) && layer.type !== 'ROAD') {
+          if (isPointInPolygon(mouseX, mouseY, layer.points)) {
+            state.selectedLayerIndex = li;
+            updateLayersUI();
+            render();
+            return;
+          }
+        }
+      }
+      for (let li = state.layers.length - 1; li >= 0; li--) {
+        const layer = state.layers[li];
+        if (isLayerVisible(layer) && layer.type === 'ROAD') {
+          if (isPointInPolygon(mouseX, mouseY, layer.points)) {
+            state.selectedLayerIndex = li;
+            updateLayersUI();
+            render();
+            return;
+          }
+        }
+      }
+
+      // Otherwise if in tool mode, add points
+      if (['ROAD_MASK', 'LANE_MASK', 'BARRIER_MASK'].includes(state.currentTool)) {
+        pushHistory();
+        state.activePolygonPoints.push({ x: Math.round(mouseX), y: Math.round(mouseY) });
+        if (state.activePolygonPoints.length === 4) {
+          let type = 'LANE';
+          let namePrefix = 'Полоса движения';
+          let dir = 'FORWARD';
+          if (state.currentTool === 'ROAD_MASK') {
+            type = 'ROAD';
+            namePrefix = 'Проезжая часть';
+          } else if (state.currentTool === 'BARRIER_MASK') {
+            type = 'BARRIER';
+            namePrefix = 'Отбойник / барьер';
+            dir = 'NONE';
+          }
+          const count = state.layers.filter(l => l.type === type).length + 1;
+          const newLayer = {
+            id: `${type.toLowerCase()}_${Date.now()}`,
+            name: `${namePrefix} ${count}`,
+            type: type,
+            direction: dir,
+            visible: true,
+            points: [...state.activePolygonPoints]
+          };
+          state.layers.push(newLayer);
+          state.selectedLayerIndex = state.layers.length - 1;
+          state.activePolygonPoints = [];
+          updateLayersUI();
+        }
+        render();
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (state.isPanning) {
+        state.offsetX += e.clientX - state.panStartX;
+        state.offsetY += e.clientY - state.panStartY;
+        state.panStartX = e.clientX;
+        state.panStartY = e.clientY;
+        render();
+        return;
+      }
+
+      if (!state.isDraggingPoint || !state.draggedPoint) return;
+      hasDragged = true;
+      const rect = canvas.getBoundingClientRect();
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      const mouseX = Math.round((screenX - state.offsetX) / state.scale);
+      const mouseY = Math.round((screenY - state.offsetY) / state.scale);
+
+      if (state.draggedPoint === 'HORIZON') {
+        state.horizonY = Math.max(10, Math.min(state.imageHeight - 50, mouseY));
+        document.getElementById('calibHorizonY').value = state.horizonY;
+      } else if (state.draggedPoint === 'CALIB_START_1') {
+        state.calibStart.x1 = mouseX; state.calibStart.y1 = mouseY;
+      } else if (state.draggedPoint === 'CALIB_START_2') {
+        state.calibStart.x2 = mouseX; state.calibStart.y2 = mouseY;
+      } else if (state.draggedPoint === 'CALIB_END_1') {
+        state.calibEnd.x1 = mouseX; state.calibEnd.y1 = mouseY;
+      } else if (state.draggedPoint === 'CALIB_END_2') {
+        state.calibEnd.x2 = mouseX; state.calibEnd.y2 = mouseY;
+      } else if (typeof state.draggedPoint === 'object') {
+        const { layerIndex, pointIndex } = state.draggedPoint;
+        state.layers[layerIndex].points[pointIndex] = { x: mouseX, y: mouseY };
+      }
+      render();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (state.isPanning) {
+        state.isPanning = false;
+        canvas.style.cursor = state.spacePressed ? 'grab' : 'crosshair';
+        return;
+      }
+      if (hasDragged && preDragSnapshot) {
+        historyStack.push(preDragSnapshot);
+        if (historyStack.length > MAX_HISTORY) historyStack.shift();
+        redoStack.length = 0;
+      }
+      preDragSnapshot = null;
+      hasDragged = false;
+      state.isDraggingPoint = false;
+      state.draggedPoint = null;
+    });
+
+    function dist(x1, y1, x2, y2) {
+      return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+    }
+
+    function isPointInPolygon(x, y, vs) {
+      let inside = false;
+      for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        const xi = vs[i].x, yi = vs[i].y;
+        const xj = vs[j].x, yj = vs[j].y;
+        const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    // Main Render function
+    function render() {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!state.image) return;
+
+      ctx.save();
+      ctx.translate(state.offsetX, state.offsetY);
+      ctx.scale(state.scale, state.scale);
+
+      // Adaptive screen-space metrics (Strictly fixed screen pixel size for all photos)
+      const inv = 1.0 / (state.scale || 1.0);
+      const mult = state.pointScaleMultiplier || 1.0;
+      const baseRadius = 5.5 * mult * inv;
+      const selRadius = 7.5 * mult * inv;
+
+      // 1. Draw source photo
+      ctx.drawImage(state.image, 0, 0);
+
+      // Layer drawing function
+      function drawSingleLayer(layer, idx) {
+        if (!isLayerVisible(layer)) return;
+        const isSelected = (idx === state.selectedLayerIndex);
+
+        ctx.beginPath();
+        layer.points.forEach((pt, pi) => {
+          if (pi === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.closePath();
+
+        if (layer.type === 'ROAD') {
+          // Soft purple asphalt carriageway surface (underneath lanes)
+          ctx.fillStyle = isSelected ? 'rgba(155, 89, 182, 0.40)' : 'rgba(155, 89, 182, 0.20)';
+          ctx.strokeStyle = isSelected ? '#ffffff' : '#9b59b6';
+          ctx.lineWidth = (isSelected ? 3.0 : 2.0) * inv;
+          ctx.setLineDash([8 * inv, 5 * inv]);
+          ctx.fill();
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else if (layer.type === 'BARRIER') {
+          ctx.fillStyle = isSelected ? 'rgba(235, 87, 87, 0.45)' : 'rgba(235, 87, 87, 0.30)';
+          ctx.strokeStyle = '#eb5757';
+          ctx.lineWidth = (isSelected ? 2.8 : 1.8) * inv;
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          // Unified lane mask color (on top of road)
+          ctx.fillStyle = isSelected ? 'rgba(0, 210, 255, 0.42)' : 'rgba(0, 210, 255, 0.25)';
+          ctx.strokeStyle = isSelected ? '#ffffff' : '#00d2ff';
+          ctx.lineWidth = (isSelected ? 2.8 : 1.8) * inv;
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        // Draw Corner drag handles (Adaptive Screen Size)
+        layer.points.forEach((pt) => {
+          const rad = isSelected ? selRadius : baseRadius;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, rad, 0, Math.PI * 2);
+          if (layer.type === 'ROAD') {
+            ctx.fillStyle = isSelected ? '#ffffff' : '#9b59b6';
+            ctx.fill();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5 * inv;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, Math.max(1, rad * 0.35), 0, Math.PI * 2);
+            ctx.fillStyle = isSelected ? '#9b59b6' : '#ffffff';
+            ctx.fill();
+          } else if (layer.type === 'BARRIER') {
+            ctx.fillStyle = isSelected ? '#ffffff' : '#eb5757';
+            ctx.fill();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5 * inv;
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = isSelected ? '#ffffff' : '#00d2ff';
+            ctx.fill();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5 * inv;
+            ctx.stroke();
+
+            // High contrast center pupil for precise placement
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, Math.max(1, rad * 0.35), 0, Math.PI * 2);
+            ctx.fillStyle = isSelected ? '#2f80ed' : '#0b1626';
+            ctx.fill();
+          }
+        });
+
+        // Layer label in center
+        const cx = Math.round(layer.points.reduce((a, p) => a + p.x, 0) / layer.points.length);
+        const cy = Math.round(layer.points.reduce((a, p) => a + p.y, 0) / layer.points.length);
+        const fontSize = Math.round(12 * inv);
+        ctx.font = 'bold ' + fontSize + 'px sans-serif';
+        ctx.fillStyle = '#000';
+        ctx.fillText(layer.name, cx - 40 * inv, cy + 1 * inv);
+        if (layer.type === 'ROAD') {
+          ctx.fillStyle = isSelected ? '#fff' : '#d7bde2';
+        } else if (layer.type === 'BARRIER') {
+          ctx.fillStyle = isSelected ? '#fff' : '#eb5757';
+        } else {
+          ctx.fillStyle = isSelected ? '#fff' : '#00d2ff';
+        }
+        ctx.fillText(layer.name, cx - 40 * inv, cy);
+      }
+
+      // Render order (Pass 1: Roadway surface at bottom, Pass 2: Barriers, Pass 3: Lanes on top)
+      state.layers.forEach((layer, idx) => {
+        if (layer.type === 'ROAD') drawSingleLayer(layer, idx);
+      });
+      state.layers.forEach((layer, idx) => {
+        if (layer.type === 'BARRIER') drawSingleLayer(layer, idx);
+      });
+      state.layers.forEach((layer, idx) => {
+        if (layer.type !== 'ROAD' && layer.type !== 'BARRIER') drawSingleLayer(layer, idx);
+      });
+
+      // 3. Draw Active Polygon being drawn
+      if (state.activePolygonPoints.length > 0) {
+        ctx.beginPath();
+        state.activePolygonPoints.forEach((pt, pi) => {
+          if (pi === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.strokeStyle = '#f2994a';
+        ctx.lineWidth = 2.0 * inv;
+        ctx.setLineDash([7 * inv, 4 * inv]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        state.activePolygonPoints.forEach(pt => {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, baseRadius * 1.1, 0, Math.PI * 2);
+          ctx.fillStyle = '#f2994a';
+          ctx.fill();
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 1.5 * inv;
+          ctx.stroke();
+        });
+      }
+
+      // 4. Horizon line (Red dashed line)
+      ctx.beginPath();
+      ctx.moveTo(0, state.horizonY);
+      ctx.lineTo(state.imageWidth, state.horizonY);
+      ctx.strokeStyle = '#eb5757';
+      ctx.lineWidth = 2.0 * inv;
+      ctx.setLineDash([9 * inv, 5 * inv]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#eb5757';
+      const horizFont = Math.round(11 * inv);
+      ctx.font = 'bold ' + horizFont + 'px sans-serif';
+      ctx.fillText(`ЛИНИЯ ГОРИЗОНТА (y = ${state.horizonY}px)`, 20 * inv, state.horizonY - 8 * inv);
+
+      // 5. White calibration lines (Beginning and End of road for adaptive sizing)
+      drawWhiteCalibLine(state.calibStart, 'Начало пути (ближняя ширина = 3.75м)');
+      drawWhiteCalibLine(state.calibEnd, 'Конец пути у горизонта (дальняя ширина = 3.75м)');
+
+      ctx.restore();
+
+      // Update HUD values
+      document.getElementById('hudLayersCount').innerText = state.layers.length;
+      document.getElementById('hudHorizonY').innerText = state.horizonY + 'px';
+    }
+
+    function drawWhiteCalibLine(line, title) {
+      const inv = 1.0 / (state.scale || 1.0);
+      const mult = state.pointScaleMultiplier || 1.0;
+      const baseRadius = 5.5 * mult * inv;
+
+      // Dark background glow for high visibility on bright roads
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.60)';
+      ctx.lineWidth = 5 * inv;
+      ctx.stroke();
+
+      // Sharp white line
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5 * inv;
+      ctx.stroke();
+
+      // End circle handles
+      [ {x: line.x1, y: line.y1}, {x: line.x2, y: line.y2} ].forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, baseRadius, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1.8 * inv;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, Math.max(1, baseRadius * 0.35), 0, Math.PI * 2);
+        ctx.fillStyle = '#2f80ed';
+        ctx.fill();
+      });
+
+      // Label
+      const midX = (line.x1 + line.x2) / 2;
+      const midY = (line.y1 + line.y2) / 2;
+      const fontSize = Math.round(11 * inv);
+      ctx.font = 'bold ' + fontSize + 'px sans-serif';
+      ctx.fillStyle = '#000000';
+      ctx.fillText(title, midX - 65 * inv, midY - 9 * inv);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(title, midX - 65 * inv, midY - 10 * inv);
+    }
+
+    // UI Updates
+    function updateLayersUI() {
+      const container = document.getElementById('layersListContainer');
+      container.innerHTML = '';
+
+      state.layers.forEach((layer, idx) => {
+        const item = document.createElement('div');
+        const isSelected = (idx === state.selectedLayerIndex);
+        const isHidden = (layer.visible === false);
+        item.className = 'layer-item' + (isSelected ? ' active' : '');
+        item.onclick = () => { state.selectedLayerIndex = idx; updateLayersUI(); render(); };
+
+        let tagColor = 'var(--accent-cyan)';
+        let typeBadge = 'Полоса';
+        if (layer.type === 'ROAD') {
+          tagColor = '#9b59b6';
+          typeBadge = 'Дорога';
+        } else if (layer.type === 'BARRIER') {
+          tagColor = 'var(--accent-red)';
+          typeBadge = 'Отбойник';
+        }
+
+        item.innerHTML = `
+          <div class="layer-left" style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+            <button class="icon-btn" onclick="event.stopPropagation(); toggleLayerIndividual(${idx});" title="${isHidden ? 'Показать слой' : 'Скрыть слой'}" style="font-size: 0.85rem; padding: 2px 4px; background: transparent; border: none; cursor: pointer; color: ${isHidden ? 'var(--text-dim)' : 'var(--accent-cyan)'};">
+              ${isHidden ? '👁‍🗨' : '👁'}
+            </button>
+            <span class="layer-tag" style="background: ${tagColor};" title="${typeBadge}"></span>
+            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; ${isHidden ? 'opacity: 0.45; text-decoration: line-through;' : ''}">${layer.name}</span>
+          </div>
+          <div class="layer-actions">
+            <button class="icon-btn" onclick="event.stopPropagation(); deleteLayerAt(${idx});" title="Удалить слой">✕</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+
+      const selectedBox = document.getElementById('selectedLayerBox');
+      if (state.selectedLayerIndex >= 0 && state.selectedLayerIndex < state.layers.length) {
+        selectedBox.style.display = 'flex';
+        const sel = state.layers[state.selectedLayerIndex];
+        document.getElementById('layerNameInput').value = sel.name;
+        document.getElementById('layerTypeSelect').value = sel.type;
+        document.getElementById('layerDirSelect').value = sel.direction;
+      } else {
+        selectedBox.style.display = 'none';
+      }
+    }
+
+    function addQuickRoadMask() {
+      if (!state.image) return;
+      pushHistory();
+      const count = state.layers.filter(l => l.type === 'ROAD').length + 1;
+      const w = state.imageWidth;
+      const h = state.imageHeight;
+      const hy = state.horizonY;
+      state.layers.push({
+        id: 'road_' + Date.now(),
+        name: `Проезжая часть ${count}`,
+        type: 'ROAD',
+        direction: count % 2 === 1 ? 'FORWARD' : 'ONCOMING',
+        visible: true,
+        points: [
+          { x: Math.round(w * 0.42), y: h - 1 },
+          { x: Math.round(w * 0.88), y: h - 1 },
+          { x: Math.round(w * 0.54), y: hy },
+          { x: Math.round(w * 0.48), y: hy }
+        ]
+      });
+      state.selectedLayerIndex = state.layers.length - 1;
+      updateLayersUI();
+      render();
+    }
+
+    function addQuickLaneMask() {
+      if (!state.image) return;
+      pushHistory();
+      const count = state.layers.length + 1;
+      const w = state.imageWidth;
+      const h = state.imageHeight;
+      const hy = state.horizonY;
+      const shift = (count * 40) % (w / 2);
+      state.layers.push({
+        id: 'lane_' + Date.now(),
+        name: `Полоса движения ${count}`,
+        type: 'LANE',
+        direction: 'FORWARD',
+        points: [
+          { x: Math.round(w * 0.45 + shift), y: h - 1 },
+          { x: Math.round(w * 0.65 + shift), y: h - 1 },
+          { x: Math.round(w * 0.52 + shift * 0.2), y: hy },
+          { x: Math.round(w * 0.49 + shift * 0.2), y: hy }
+        ]
+      });
+      state.selectedLayerIndex = state.layers.length - 1;
+      updateLayersUI();
+      render();
+    }
+
+    function deleteLayerAt(idx) {
+      pushHistory();
+      state.layers.splice(idx, 1);
+      state.selectedLayerIndex = Math.min(state.selectedLayerIndex, state.layers.length - 1);
+      updateLayersUI();
+      render();
+    }
+
+    function deleteSelectedLayer() {
+      if (state.selectedLayerIndex >= 0) deleteLayerAt(state.selectedLayerIndex);
+    }
+
+    function clearAllMasks() {
+      if (confirm('Очистить все созданные маски полос?')) {
+        pushHistory();
+        state.layers = [];
+        state.selectedLayerIndex = -1;
+        updateLayersUI();
+        render();
+      }
+    }
+
+    function updateSelectedLayerName(val) {
+      if (state.selectedLayerIndex >= 0) {
+        state.layers[state.selectedLayerIndex].name = val;
+        updateLayersUI();
+        render();
+      }
+    }
+    function updateSelectedLayerType(val) {
+      if (state.selectedLayerIndex >= 0) {
+        pushHistory();
+        state.layers[state.selectedLayerIndex].type = val;
+        render();
+      }
+    }
+    function updateSelectedLayerDir(val) {
+      if (state.selectedLayerIndex >= 0) {
+        pushHistory();
+        state.layers[state.selectedLayerIndex].direction = val;
+        render();
+      }
+    }
+
+    function updateHorizonFromInput(val) {
+      pushHistory();
+      state.horizonY = parseInt(val) || state.horizonY;
+      render();
+    }
+
+    // Keyboard Shortcuts: Ctrl+Z, Ctrl+Y, Esc, Del, Space (Pan), F (Fit)
+    window.addEventListener('keydown', (e) => {
+      // Do not intercept if user is typing into an input field or select dropdown
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+      const code = e.code;
+      const key = e.key.toLowerCase();
+
+      // Spacebar hold for Pan
+      if (code === 'Space' && !state.spacePressed) {
+        state.spacePressed = true;
+        canvas.style.cursor = 'grab';
+        e.preventDefault();
+        return;
+      }
+
+      // 'F' key resets zoom to fit screen
+      if ((code === 'KeyF' || key === 'f' || key === 'а') && !e.ctrlKey && !e.metaKey) {
+        resetZoomFit();
+        return;
+      }
+
+      // Ctrl+Z or Cmd+Z (both English 'KeyZ' and Russian 'я')
+      if (e.ctrlKey || e.metaKey) {
+        if (code === 'KeyZ' || key === 'z' || key === 'я') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            redo();
+          } else {
+            undo();
+          }
+        } else if (code === 'KeyY' || key === 'y' || key === 'н') {
+          e.preventDefault();
+          redo();
+        }
+      } else if (key === 'escape') {
+        if (state.activePolygonPoints && state.activePolygonPoints.length > 0) {
+          pushHistory();
+          state.activePolygonPoints = [];
+          render();
+        }
+      } else if (key === 'delete' || key === 'backspace') {
+        if (state.selectedLayerIndex >= 0) {
+          deleteSelectedLayer();
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') {
+        state.spacePressed = false;
+        if (!state.isPanning) {
+          canvas.style.cursor = 'crosshair';
+        }
+      }
+    });
+
+    function updateCalibValues() {
+      state.metricWidthM = parseFloat(document.getElementById('calibMetricWidth').value) || 3.75;
+      state.carRatio = parseFloat(document.getElementById('autoCarRatio').value) || 53;
+      state.boxRatio = parseFloat(document.getElementById('autoBoxRatio').value) || 30;
+
+      const carW = (state.metricWidthM * state.carRatio / 100).toFixed(2);
+      const boxW = (state.metricWidthM * state.boxRatio / 100).toFixed(2);
+      document.getElementById('calcCarWidth').innerText = carW + ' м';
+      document.getElementById('calcBoxWidth').innerText = boxW + ' м';
+    }
+
+    function switchRightTab(tab) {
+      document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tabContentLayers').style.display = (tab === 'layers') ? 'flex' : 'none';
+      document.getElementById('tabContentCalib').style.display = (tab === 'calibration') ? 'flex' : 'none';
+      document.getElementById('tabContentDataset').style.display = (tab === 'dataset') ? 'flex' : 'none';
+      event.target.classList.add('active');
+      if (tab === 'dataset') refreshDatasetList();
+    }
+
+    // Helper to strip any trailing username suffix from filenames
+    function getCleanBaseName(rawFileName, username) {
+      if (!rawFileName) return "road";
+      let base = rawFileName.replace(/\.[^/.]+$/, "");
+      const u = (username || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pattern = new RegExp(`_(${u}|User|user|anonymous)$`, 'i');
+      base = base.replace(pattern, '');
+      return base.trim() || "road";
+    }
+
+    // Build unified Export Data structure with dedicated carriageways, lanes & barriers
+    function buildExportData(baseName, username) {
+      const combined = `${baseName}_${username}`;
+      const carriageways = state.layers.filter(l => l.type === 'ROAD');
+      const lanes = state.layers.filter(l => l.type === 'LANE');
+      const barriers = state.layers.filter(l => l.type === 'BARRIER');
+
+      const formatLayer = (l, idx) => ({
+        instance_id: idx + 1,
+        id: l.id,
+        name: l.name,
+        type: l.type,
+        direction: l.direction,
+        polygon_2d: l.points.map(p => [p.x, p.y]),
+        polygon_normalized: l.points.map(p => [
+          parseFloat((p.x / state.imageWidth).toFixed(4)),
+          parseFloat((p.y / state.imageHeight).toFixed(4))
+        ])
+      });
+
+      return {
+        version: "2.1",
+        dataset_target: "3D_Lane_and_Road_Scale_Estimation",
+        annotator_username: username,
+        created_at: new Date().toISOString(),
+        image: {
+          file_name: `${combined}.jpg`,
+          width: state.imageWidth,
+          height: state.imageHeight
+        },
+        calibration: {
+          horizon_line_y: state.horizonY,
+          horizon_normalized_v: parseFloat((state.horizonY / state.imageHeight).toFixed(4)),
+          standard_lane_width_meters: state.metricWidthM,
+          white_calib_line_start: state.calibStart,
+          white_calib_line_end: state.calibEnd,
+          metric_pixel_scale_start: parseFloat((state.metricWidthM / dist(state.calibStart.x1, state.calibStart.y1, state.calibStart.x2, state.calibStart.y2)).toFixed(6)),
+          metric_pixel_scale_end: parseFloat((state.metricWidthM / dist(state.calibEnd.x1, state.calibEnd.y1, state.calibEnd.x2, state.calibEnd.y2)).toFixed(6))
+        },
+        object_adaptive_scaling: {
+          vehicle_to_lane_ratio: state.carRatio / 100.0,
+          vehicle_calculated_width_m: parseFloat((state.metricWidthM * state.carRatio / 100.0).toFixed(3)),
+          box_to_lane_ratio: state.boxRatio / 100.0,
+          box_calculated_width_m: parseFloat((state.metricWidthM * state.boxRatio / 100.0).toFixed(3))
+        },
+        summary: {
+          total_masks: state.layers.length,
+          carriageways_count: carriageways.length,
+          lanes_count: lanes.length,
+          barriers_count: barriers.length
+        },
+        // Dedicated separate arrays so models can parse road surfaces independently from lanes:
+        carriageways: carriageways.map(formatLayer),
+        lanes: lanes.map(formatLayer),
+        barriers: barriers.map(formatLayer),
+        // Unified legacy/complete list:
+        all_layers: state.layers.map(formatLayer)
+      };
+    }
+
+    // Save image & json directly into the accumulator dataset
+    async function saveToDataset() {
+      if (!state.image) {
+        alert('Сначала загрузите изображение!');
+        return;
+      }
+      if (!state.username || !state.username.trim()) initUser();
+      const username = state.username || 'User';
+
+      // Ensure dataUrl exists
+      let dataUrl = state.imageDataUrl;
+      if (!dataUrl && state.image) {
+        try {
+          const off = document.createElement('canvas');
+          off.width = state.imageWidth;
+          off.height = state.imageHeight;
+          const octx = off.getContext('2d');
+          octx.drawImage(state.image, 0, 0);
+          dataUrl = off.toDataURL('image/jpeg', 0.95);
+          state.imageDataUrl = dataUrl;
+        } catch (e) {
+          console.warn('Canvas export failed:', e);
+        }
+      }
+
+      const baseName = getCleanBaseName(state.imageFileName, username);
+      const exportData = buildExportData(baseName, username);
+
+      try {
+        const res = await fetch('/api/save_sample', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: username,
+            base_name: baseName,
+            image_data_url: dataUrl,
+            json_data: exportData
+          })
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          alert(`✓ Успешно сохранено в базу датасета!\n\n📷 Фото: ${result.image_file}\n📄 Разметка: ${result.json_file}\n👤 Разметчик: ${result.username}\n📦 Всего кадров в датасете: ${result.total_samples}`);
+          refreshDatasetList();
+        } else {
+          throw new Error('Server returned ' + res.status);
+        }
+      } catch (err) {
+        console.warn('Сервер не отвечает, скачиваем файлы через браузер:', err);
+        // Fallback: direct browser download of both files
+        downloadClientSidePair(baseName, username, dataUrl, exportData);
+      }
+    }
+
+    function downloadClientSidePair(baseName, username, dataUrl, exportData) {
+      const combined = `${baseName}_${username}`;
+      // Download JSON
+      const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+      const aJson = document.createElement('a');
+      aJson.href = jsonStr;
+      aJson.download = `${combined}.json`;
+      document.body.appendChild(aJson);
+      aJson.click();
+      aJson.remove();
+
+      // Download Image
+      if (dataUrl) {
+        setTimeout(() => {
+          const aImg = document.createElement('a');
+          aImg.href = dataUrl;
+          aImg.download = `${combined}.jpg`;
+          document.body.appendChild(aImg);
+          aImg.click();
+          aImg.remove();
+        }, 300);
+      }
+      alert(`✓ Скачана пара файлов:\n${combined}.jpg\n${combined}.json\n(Разметчик: ${username})`);
+    }
+
+    // Refresh dataset listing from server
+    async function refreshDatasetList() {
+      try {
+        const res = await fetch('/api/list_dataset');
+        if (!res.ok) return;
+        const data = await res.json();
+        const container = document.getElementById('datasetItemsContainer');
+        const badge = document.getElementById('datasetCountTab');
+        if (badge) badge.innerText = data.count || 0;
+        
+        if (!data.samples || data.samples.length === 0) {
+          container.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; text-align: center; padding: 15px;">База датасета пока пуста.<br>Нажмите «Сохранить в датасет», чтобы добавить кадр!</div>';
+          return;
+        }
+
+        container.innerHTML = '';
+        data.samples.forEach(s => {
+          const item = document.createElement('div');
+          item.className = 'dataset-item';
+          const parts = s.id.split('_');
+          const author = parts.length > 1 ? parts[parts.length - 1] : 'user';
+          item.innerHTML = `
+            <div class="dataset-item-header">
+              <span>📷 ${s.id}</span>
+              <span class="badge-author">👤 ${author}</span>
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-dim); display: flex; gap: 8px; margin-top: 2px;">
+              <span>📄 ${s.json}</span>
+              <span>🖼 ${s.image || 'файл фото'}</span>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+      } catch (e) {
+        console.warn('Не удалось загрузить список датасета с сервера:', e);
+      }
+    }
+
+    // Export complete Training Dataset JSON format (Manual download)
+    function exportJSON() {
+      if (!state.username || !state.username.trim()) initUser();
+      const username = state.username || 'User';
+      const baseName = getCleanBaseName(state.imageFileName, username);
+      const exportData = buildExportData(baseName, username);
+
+      const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", jsonStr);
+      downloadAnchor.setAttribute("download", `${baseName}_${username}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      alert(`✓ JSON успешно экспортирован как "${baseName}_${username}.json"!`);
+    }
+
+    function exportRenderedImage() {
+      if (!state.image) return;
+      const username = state.username || 'User';
+      const baseName = getCleanBaseName(state.imageFileName, username);
+
+      // Render onto high-resolution offscreen canvas
+      const off = document.createElement('canvas');
+      off.width = state.imageWidth;
+      off.height = state.imageHeight;
+      const octx = off.getContext('2d');
+
+      octx.drawImage(state.image, 0, 0);
+
+      // Helper for offscreen layer
+      function drawOffLayer(layer) {
+        if (!isLayerVisible(layer)) return;
+        octx.beginPath();
+        layer.points.forEach((pt, pi) => {
+          if (pi === 0) octx.moveTo(pt.x, pt.y);
+          else octx.lineTo(pt.x, pt.y);
+        });
+        octx.closePath();
+        if (layer.type === 'ROAD') {
+          octx.fillStyle = 'rgba(155, 89, 182, 0.25)';
+          octx.strokeStyle = '#9b59b6';
+          octx.lineWidth = 4;
+          octx.setLineDash([12, 8]);
+          octx.fill();
+          octx.stroke();
+          octx.setLineDash([]);
+        } else if (layer.type === 'BARRIER') {
+          octx.fillStyle = 'rgba(235, 87, 87, 0.35)';
+          octx.strokeStyle = '#eb5757';
+          octx.lineWidth = 4;
+          octx.fill();
+          octx.stroke();
+        } else {
+          octx.fillStyle = 'rgba(0, 210, 255, 0.30)';
+          octx.strokeStyle = '#00d2ff';
+          octx.lineWidth = 4;
+          octx.fill();
+          octx.stroke();
+        }
+
+        layer.points.forEach(pt => {
+          octx.beginPath();
+          octx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+          octx.fillStyle = '#ffffff';
+          octx.fill();
+          octx.strokeStyle = '#000000';
+          octx.lineWidth = 2;
+          octx.stroke();
+        });
+      }
+
+      // Draw passes
+      state.layers.forEach(l => { if (l.type === 'ROAD') drawOffLayer(l); });
+      state.layers.forEach(l => { if (l.type === 'BARRIER') drawOffLayer(l); });
+      state.layers.forEach(l => { if (l.type !== 'ROAD' && l.type !== 'BARRIER') drawOffLayer(l); });
+
+      // Horizon line
+      octx.beginPath();
+      octx.moveTo(0, state.horizonY);
+      octx.lineTo(state.imageWidth, state.horizonY);
+      octx.strokeStyle = '#eb5757';
+      octx.lineWidth = 3;
+      octx.setLineDash([12, 8]);
+      octx.stroke();
+      octx.setLineDash([]);
+
+      const link = document.createElement('a');
+      link.download = `${baseName}_${username}_annotated.png`;
+      link.href = off.toDataURL('image/png');
+      link.click();
+    }
+
+    // Auto-load sample image and initialize user on startup
+    window.onload = () => {
+      initUser();
+      loadSampleImage();
+      updateCalibValues();
+      refreshDatasetList();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# ADAS Road Obstacle Dataset for YOLOv8 / YOLOv9 / YOLOv10
+path: result
+train: images/train
+val: images/val
+
+# Target Classes
+nc: 3
+names:
+  0: person
+  1: vehicle
+  2: obstacle
